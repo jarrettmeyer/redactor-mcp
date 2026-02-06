@@ -1,8 +1,8 @@
-Name,Email,Phone,SSN,Address
-Jane Doe,jane.doe@example.com,(555) 867-5309,123-45-6789,"742 Evergreen Terrace, Springfield, IL 62704"
-John Smith,john.smith@example.com,(555) 234-5678,987-65-4321,"123 Maple Street, Portland, OR 97201"
-Maria Garcia,maria.garcia@example.com,(555) 345-6789,456-78-9012,"456 Oak Avenue, Austin, TX 78701"
-Robert Johnson,robert.johnson@example.com,(555) 456-7890,321-54-9876,"789 Pine Road, Denver, CO 80201"
-Emily Chen,emily.chen@example.com,(555) 567-8901,654-32-1098,"321 Birch Lane, Seattle, WA 98101"
-David Wilson,david.wilson@example.com,(555) 678-9012,789-01-2345,"654 Cedar Drive, Boston, MA 02101"
-Sarah Brown,sarah.brown@example.com,(555) 789-0123,012-34-5678,"987 Elm Court, Chicago, IL 60601"
+Name,Email,Phone,SSN,Address,City,State,Zip,Profession,DateOfBirth,Age
+Jane Doe,jane.doe@example.com,(555) 867-5309,123-45-6789,742 Evergreen Terrace,Springfield,IL,62704,Software Engineer,1989-03-15,34
+John Smith,john.smith@example.com,(555) 234-5678,987-65-4321,123 Maple Street,Portland,OR,97201,Teacher,1981-07-22,42
+Maria Garcia,maria.garcia@example.com,(555) 345-6789,456-78-9012,456 Oak Avenue,Austin,TX,78701,Nurse,1995-11-08,28
+Robert Johnson,robert.johnson@example.com,(555) 456-7890,321-54-9876,789 Pine Road,Denver,CO,80201,Accountant,1972-05-30,51
+Emily Chen,emily.chen@example.com,(555) 567-8901,654-32-1098,321 Birch Lane,Seattle,WA,98101,Marketing Manager,1986-09-14,37
+David Wilson,david.wilson@example.com,(555) 678-9012,789-01-2345,654 Cedar Drive,Boston,MA,02101,Architect,1978-12-03,45
+Sarah Brown,sarah.brown@example.com,(555) 789-0123,012-34-5678,987 Elm Court,Chicago,IL,60601,Data Analyst,1994-06-19,29
