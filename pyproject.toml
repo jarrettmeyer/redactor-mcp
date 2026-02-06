@@ -1,0 +1,16 @@
+[project]
+name = "redactor-mcp"
+version = "0.1.0"
+description = "MCP server that wraps AWS Comprehend for PII detection and redaction"
+requires-python = ">=3.14"
+dependencies = ["mcp", "boto3", "python-dotenv"]
+
+[project.scripts]
+redactor-mcp = "redactor_mcp.server:main"
+
+[dependency-groups]
+dev = ["boto3-stubs[comprehend]"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
