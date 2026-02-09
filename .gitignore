@@ -1,11 +1,10 @@
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-dist/
-build/
+# Operating system
+.DS_Store
+
+# Environment
 .venv/
 .env
-*.egg
-.mypy_cache/
-.ruff_cache/
+
+# Python
+__pycache__/
+*.egg-info/
