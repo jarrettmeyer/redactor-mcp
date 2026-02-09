@@ -62,7 +62,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 {
   "mcpServers": {
     "redactor-mcp": {
-      "command": "uv",
+      "command": "/Users/YOUR_USERNAME/.local/bin/uv",
       "args": ["run", "--directory", "/absolute/path/to/redactor-mcp", "redactor-mcp"],
       "env": {
         "AWS_PROFILE": "your-profile",
@@ -73,7 +73,12 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-Replace `/absolute/path/to/redactor-mcp` with the actual path to this project and `your-profile` with your AWS profile name.
+**Important:** Replace:
+- `/Users/YOUR_USERNAME/.local/bin/uv` with the full path to `uv` (find it with `which uv`)
+- `/absolute/path/to/redactor-mcp` with the actual path to this project
+- `your-profile` with your AWS profile name
+
+**Why the full path?** Claude Desktop runs with a limited PATH (`/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin`) that doesn't include `~/.local/bin` where `uv` is typically installed. Using the full path ensures Claude Desktop can find the `uv` executable.
 
 ## Usage
 
