@@ -2,10 +2,10 @@
   "model": "opusplan",
   "permissions": {
     "allow": [
+      "Bash(bun:*)",
+      "Bash(bunx:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx @modelcontextprotocol/inspector:*)",
-      "Bash(uv run:*)",
       "WebSearch",
       "mcp__playwright__browser_click",
       "mcp__playwright__browser_navigate",

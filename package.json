@@ -1,0 +1,29 @@
+{
+  "name": "redactor-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that wraps AWS Comprehend for PII detection and redaction",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --minify",
+    "dev": "bun run src/index.ts",
+    "inspector": "bunx @modelcontextprotocol/inspector bun run src/index.ts",
+    "pack": "bunx @anthropic-ai/mcpb pack .",
+    "start": "node dist/index.js",
+    "typecheck": "bunx tsc --noEmit",
+    "validate": "bunx @anthropic-ai/mcpb validate manifest.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-comprehend": "^3.988.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@smithy/property-provider": "^4.2.8",
+    "dotenv": "^17.2.4",
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "latest"
+  }
+}

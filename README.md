@@ -6,8 +6,7 @@ This is a **demo project**, not production software.
 
 ## Prerequisites
 
-- Python 3.14+
-- [uv](https://docs.astral.sh/uv/)
+- Node.js 18+ or Bun 1.0+
 - AWS credentials with `comprehend:DetectPiiEntities` permission
 
 ## AWS Credentials Setup
@@ -45,25 +44,83 @@ aws configure
 ## Installation
 
 ```bash
-uv sync
+bun install
+```
+
+## Type Checking
+
+```bash
+bun run typecheck
+```
+
+## Building
+
+Build the project to `dist/`:
+
+```bash
+bun run build
 ```
 
 ## Running the Server
 
+For development:
+
 ```bash
-uv run redactor-mcp
+bun run dev
 ```
+
+For production (after building):
+
+```bash
+bun run start
+```
+
+## Testing with MCP Inspector
+
+Launch the Inspector UI to test tools interactively:
+
+```bash
+bun run inspector
+```
+
+1. Click **Connect**
+2. Go to **Tools** tab, click **List Tools**
+3. Test `detect_pii` with: `{"text": "My name is Jane Doe and my SSN is 123-45-6789."}`
+4. Test `redact_pii` with the same text
+
+Expected results:
+- `detect_pii` returns two entities: NAME ("Jane Doe") and SSN ("123-45-6789")
+- `redact_pii` returns: `"My name is [NAME] and my SSN is [SSN]."`
 
 ## Claude Desktop Configuration
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
+### Option 1: Development Mode (run from source)
+
 ```json
 {
   "mcpServers": {
     "redactor-mcp": {
-      "command": "/Users/YOUR_USERNAME/.local/bin/uv",
-      "args": ["run", "--directory", "/absolute/path/to/redactor-mcp", "redactor-mcp"],
+      "command": "bun",
+      "args": ["run", "/absolute/path/to/redactor-mcp/src/index.ts"],
+      "env": {
+        "AWS_PROFILE": "your-profile",
+        "AWS_REGION": "us-east-1"
+      }
+    }
+  }
+}
+```
+
+### Option 2: Production Mode (run compiled version)
+
+```json
+{
+  "mcpServers": {
+    "redactor-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/redactor-mcp/dist/index.js"],
       "env": {
         "AWS_PROFILE": "your-profile",
         "AWS_REGION": "us-east-1"
@@ -74,11 +131,20 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```
 
 **Important:** Replace:
-- `/Users/YOUR_USERNAME/.local/bin/uv` with the full path to `uv` (find it with `which uv`)
 - `/absolute/path/to/redactor-mcp` with the actual path to this project
 - `your-profile` with your AWS profile name
 
-**Why the full path?** Claude Desktop runs with a limited PATH (`/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin`) that doesn't include `~/.local/bin` where `uv` is typically installed. Using the full path ensures Claude Desktop can find the `uv` executable.
+For production mode, make sure to run `bun run build` first.
+
+## Packaging for Distribution
+
+Create an MCPB package for easy distribution:
+
+```bash
+bun run pack
+```
+
+This creates a `.mcpb` file that can be installed directly in Claude Desktop.
 
 ## Usage
 

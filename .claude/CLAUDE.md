@@ -30,7 +30,7 @@ Both tools accept text content directly. Claude Desktop handles file I/O — the
 
 ### Prompt
 
-**`redact_pii_guide`** — A guided prompt template that walks the user through:
+**`pii_redaction_guide`** — A guided prompt template that walks the user through:
 
 - What file to redact
 - All PII or specific types
@@ -52,23 +52,31 @@ The prompt is a UX convenience. The tools work fine without it via free-form con
 redactor-mcp/
 ├── .claude/
 │   └── CLAUDE.md              # This file
+├── dist/                      # Build output (generated)
 ├── docs/
 │   └── samples/
 │       ├── sample-001.md      # Sample markdown with fake PII
 │       └── sample-002.csv     # Sample CSV with fake PII
 ├── src/
-│   └── redactor_mcp/
-│       ├── __init__.py
-│       ├── server.py          # MCP server definition, tools, prompt
-│       └── comprehend.py      # AWS Comprehend wrapper
-├── pyproject.toml
-└── README.md
+│   ├── index.ts               # MCP server entry point
+│   ├── comprehend.ts          # AWS Comprehend wrapper with retry logic
+│   ├── types.ts               # Type definitions and Zod schemas
+│   ├── utils.ts               # Helper functions
+│   └── prompts/
+│       └── pii_redaction_guide.md
+├── manifest.json              # MCPB packaging metadata
+├── package.json
+├── README.md
+└── tsconfig.json
 ```
 
 ## Dependencies
 
-- `mcp` — MCP Python SDK
-- `boto3` — AWS SDK for Python
+- `@modelcontextprotocol/sdk` — MCP TypeScript SDK
+- `@aws-sdk/client-comprehend` — AWS SDK v3 for Comprehend
+- `@smithy/property-provider` — For credential error handling
+- `dotenv` — Environment variable loading
+- `zod` — Runtime schema validation
 
 ## Key Design Decisions
 
@@ -77,11 +85,53 @@ redactor-mcp/
 - **Plain text files only** — `.txt`, `.md`, `.csv`. Other file types are a future problem.
 - **Demo scope** — No async operations, no multi-language support, no custom entity mappings.
 
+## Implementation Details
+
+### Module Structure
+
+- **src/index.ts** — MCP server using `@modelcontextprotocol/sdk`, registers tools and prompts, handles tool execution
+- **src/comprehend.ts** — AWS Comprehend client wrapper with sophisticated credential error detection and automatic retry logic
+- **src/types.ts** — Zod schemas for parameter validation, TypeScript type definitions, AWS SDK type re-exports
+- **src/utils.ts** — Text size validation (100KB limit enforcement) and entity filtering by type/confidence
+
+### Credential Retry Logic
+
+The TypeScript implementation maintains the sophisticated credential error handling from the Python version:
+
+- Detects credential errors via multiple strategies:
+  - `CredentialsProviderError` instance check (AWS SDK v3 Smithy provider)
+  - Error name matching (ExpiredTokenException, InvalidToken, UnrecognizedClientException, etc.)
+  - HTTP status codes (401 Unauthorized, 403 Forbidden)
+  - Error message keyword matching (sso, credential, token)
+- Automatically resets the cached ComprehendClient on credential errors
+- Retries once with a fresh client to handle expired SSO tokens
+- Provides helpful SSO login instructions with profile name on persistent failures
+
+### Tool Parameter Validation
+
+Uses Zod schemas to validate tool parameters at runtime:
+- Type-safe parameter parsing with automatic coercion
+- Default values (confidence_threshold: 0.0)
+- Range validation (confidence between 0 and 1)
+- Ensures type safety beyond TypeScript's compile-time checks
+
 ## How to Run
 
 ```bash
-uv sync
-uv run redactor-mcp
+bun install
+bun run dev
+```
+
+## How to Build
+
+```bash
+bun run build
+```
+
+## Type Checking
+
+```bash
+bun run typecheck
 ```
 
 ## How to Test
@@ -89,7 +139,7 @@ uv run redactor-mcp
 ### Type checking
 
 ```bash
-uv run pyright src/
+bun run typecheck
 ```
 
 ### MCP Inspector
@@ -97,7 +147,7 @@ uv run pyright src/
 Launch the Inspector to test tools interactively:
 
 ```bash
-npx @modelcontextprotocol/inspector uv run redactor-mcp
+bun run inspector
 ```
 
 1. Click **Connect**.
@@ -108,8 +158,6 @@ Test input: `My name is Jane Doe and my SSN is 123-45-6789.`
 
 - `detect_pii` should return two entities: NAME ("Jane Doe") and SSN ("123-45-6789").
 - `redact_pii` should return: `My name is [NAME] and my SSN is [SSN].`
-
-**Note:** The Inspector spawns the server as a subprocess. The server loads `.env` from the project root via an explicit path, so AWS credentials should resolve automatically. If you get a region error, ensure `AWS_REGION` or `AWS_DEFAULT_REGION` is set in `.env`.
 
 ### Claude Desktop
 

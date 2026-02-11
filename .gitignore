@@ -1,11 +1,20 @@
-# Operating system
+# operating system
 .DS_Store
 
-# Environment
-.venv/
+# environment
 .env
+.env.*
+!.env.example
 
 # Python
 __pycache__/
 *.egg-info/
-.playwright-mcp/
+.ruff_cache/
+
+# bun/node
+dist/
+node_modules/
+
+# data
+*.log
+*.mcpb
