@@ -7,7 +7,7 @@ This is a **demo project**, not production software.
 ## Prerequisites
 
 - Node.js 18+ or Bun 1.0+
-- AWS credentials with `comprehend:DetectPiiEntities` permission
+- AWS credentials with `comprehend:DetectPiiEntities` and `comprehend:DetectDominantLanguage` permissions
 
 ## AWS Credentials Setup
 
@@ -36,7 +36,10 @@ aws configure
 ```json
 {
   "Effect": "Allow",
-  "Action": "comprehend:DetectPiiEntities",
+  "Action": [
+    "comprehend:DetectPiiEntities",
+    "comprehend:DetectDominantLanguage"
+  ],
   "Resource": "*"
 }
 ```
@@ -85,12 +88,56 @@ bun run inspector
 
 1. Click **Connect**
 2. Go to **Tools** tab, click **List Tools**
-3. Test `detect_pii` with: `{"text": "My name is Jane Doe and my SSN is 123-45-6789."}`
-4. Test `redact_pii` with the same text
+3. Test the tools:
 
-Expected results:
-- `detect_pii` returns two entities: NAME ("Jane Doe") and SSN ("123-45-6789")
-- `redact_pii` returns: `"My name is [NAME] and my SSN is [SSN]."`
+### Language Detection
+
+```json
+{"text": "Bonjour, je m'appelle Marie."}
+```
+
+Returns detected language(s) with confidence scores:
+
+```json
+[
+  {
+    "language_code": "fr",
+    "language_name": "French",
+    "score": 0.9876
+  }
+]
+```
+
+### PII Detection
+
+Test `detect_pii` with: `{"text": "My name is Jane Doe and my SSN is 123-45-6789."}`
+
+Returns two entities: NAME ("Jane Doe") and SSN ("123-45-6789")
+
+### PII Redaction
+
+Test `redact_pii` with the same text
+
+Returns: `"My name is [NAME] and my SSN is [SSN]."`
+
+### Language Support
+
+- **Language Detection**: Supports 100+ languages
+- **PII Detection/Redaction**: Currently supports **English and Spanish** only
+
+You can optionally specify the language code:
+
+```json
+{"text": "Mi nombre es Juan García", "language_code": "es"}
+```
+
+Or let the system auto-detect:
+
+```json
+{"text": "My name is Jane Doe"}
+```
+
+**Note**: If non-English/non-Spanish text is provided to PII tools, you'll receive a clear error message with the detected language.
 
 ## Claude Desktop Configuration
 
@@ -150,10 +197,17 @@ This creates a `.mcpb` file that can be installed directly in Claude Desktop.
 
 Upload a `.txt`, `.md`, or `.csv` file in Claude Desktop and try prompts like:
 
+- "What language is this document?"
+- "Detect the language in this file"
 - "Detect the PII in this file"
-- "Remove the PII from this file"
+- "Remove the PII from this file" (language auto-detected)
 - "Find all the email addresses in this file"
 - "Redact only names and phone numbers"
 - "Redact PII but only high-confidence matches"
+- "Detect PII using Spanish language code"
 
-Sample files are in `docs/samples/` for testing.
+Sample files are in `docs/samples/` for testing:
+- `sample-001.md` - English text with PII
+- `sample-002.csv` - English CSV with multiple employee records
+- `sample-003-spanish.txt` - Spanish text with PII (tests Spanish PII detection)
+- `sample-004-french.txt` - French text (tests language detection and unsupported language handling)

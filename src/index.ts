@@ -10,13 +10,22 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { detectPiiEntities, redactText } from "./comprehend.js";
-import { checkTextSize, filterEntities } from "./utils.js";
+import { detectPiiEntities, redactText, detectLanguage } from "./comprehend.js";
 import {
+  checkTextSize,
+  filterEntities,
+  detectAndValidateLanguage,
+  getLanguageName,
+  isPiiLanguageSupported,
+} from "./utils.js";
+import {
+  DetectLanguageParamsSchema,
   DetectPiiParamsSchema,
   RedactPiiParamsSchema,
+  type DetectLanguageParams,
   type DetectPiiParams,
   type RedactPiiParams,
+  type DetectedLanguage,
   type DetectedPiiEntity,
 } from "./types.js";
 
@@ -44,9 +53,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
+        name: "detect_language",
+        description:
+          "Detect the dominant language(s) in the provided text. Returns languages sorted by confidence score (highest first). Supports 100+ languages.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "The text content to analyze" },
+          },
+          required: ["text"],
+        },
+      },
+      {
         name: "detect_pii",
         description:
-          "Detect PII entities in the provided text. Returns list of detected entities with type, text, score, and character offsets.",
+          "Detect PII entities in the provided text. Currently supports English and Spanish. Returns list of detected entities with type, text, score, and character offsets.",
         inputSchema: {
           type: "object",
           properties: {
@@ -65,6 +86,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Minimum confidence score to include an entity. Defaults to 0.0 (include everything).",
             },
+            language_code: {
+              type: "string",
+              description:
+                "Language code (e.g., 'en' for English or 'es' for Spanish). If omitted, language will be auto-detected. Currently only 'en' and 'es' are supported for PII detection.",
+            },
           },
           required: ["text"],
         },
@@ -72,7 +98,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "redact_pii",
         description:
-          "Redact PII entities in the provided text by replacing them with tags like [NAME], [SSN], [ADDRESS], etc.",
+          "Redact PII entities in the provided text by replacing them with tags like [NAME], [SSN], [ADDRESS], etc. Currently supports English and Spanish.",
         inputSchema: {
           type: "object",
           properties: {
@@ -91,6 +117,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Minimum confidence score to redact an entity. Defaults to 0.0 (redact everything).",
             },
+            language_code: {
+              type: "string",
+              description:
+                "Language code (e.g., 'en' for English or 'es' for Spanish). If omitted, language will be auto-detected. Currently only 'en' and 'es' are supported for PII detection.",
+            },
           },
           required: ["text"],
         },
@@ -102,6 +133,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Register call tool handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
+    if (request.params.name === "detect_language") {
+      // Validate and parse parameters
+      const params = DetectLanguageParamsSchema.parse(
+        request.params.arguments
+      ) as DetectLanguageParams;
+
+      // Validate text size
+      checkTextSize(params.text);
+
+      // Call AWS Comprehend
+      const languages = await detectLanguage(params.text);
+
+      // Map to output format
+      const result: DetectedLanguage[] = languages.map((lang) => ({
+        language_code: lang.LanguageCode || "unknown",
+        language_name: getLanguageName(lang.LanguageCode || ""),
+        score: lang.Score || 0.0,
+      }));
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    }
+
     if (request.params.name === "detect_pii") {
       // Validate and parse parameters
       const params = DetectPiiParamsSchema.parse(
@@ -111,8 +171,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Validate text size
       checkTextSize(params.text);
 
-      // Call AWS Comprehend
-      const entities = await detectPiiEntities(params.text);
+      // Determine language code
+      let languageCode: string;
+      if (params.language_code) {
+        // User provided explicit language code
+        languageCode = params.language_code;
+
+        // Validate it's supported
+        if (!isPiiLanguageSupported(languageCode)) {
+          const languageName = getLanguageName(languageCode);
+          throw new Error(
+            `PII detection only supports English ('en') and Spanish ('es'). Requested language: ${languageName} (${languageCode}).`
+          );
+        }
+      } else {
+        // Auto-detect and validate language
+        languageCode = await detectAndValidateLanguage(params.text);
+      }
+
+      // Call AWS Comprehend with determined language
+      const entities = await detectPiiEntities(params.text, languageCode);
 
       // Filter entities
       const filtered = filterEntities(
@@ -149,8 +227,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Validate text size
       checkTextSize(params.text);
 
-      // Call AWS Comprehend
-      const entities = await detectPiiEntities(params.text);
+      // Determine language code (same logic as detect_pii)
+      let languageCode: string;
+      if (params.language_code) {
+        // User provided explicit language code
+        languageCode = params.language_code;
+
+        // Validate it's supported
+        if (!isPiiLanguageSupported(languageCode)) {
+          const languageName = getLanguageName(languageCode);
+          throw new Error(
+            `PII redaction only supports English ('en') and Spanish ('es'). Requested language: ${languageName} (${languageCode}).`
+          );
+        }
+      } else {
+        // Auto-detect and validate language
+        languageCode = await detectAndValidateLanguage(params.text);
+      }
+
+      // Call AWS Comprehend with determined language
+      const entities = await detectPiiEntities(params.text, languageCode);
 
       // Filter entities
       const filtered = filterEntities(

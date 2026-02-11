@@ -1,0 +1,39 @@
+# Perfil de Empleado - Juan García Martínez
+
+## Información Personal
+
+**Nombre Completo:** Juan García Martínez
+**Fecha de Nacimiento:** 15 de marzo de 1985
+**Número de Seguro Social:** 123-45-6789
+**Teléfono:** +34 912 345 678
+**Correo Electrónico:** juan.garcia@empresa.es
+
+## Dirección
+
+Calle Mayor, 42, 3° B
+28013 Madrid
+España
+
+## Información Bancaria
+
+**Número de Cuenta:** ES91 2100 0418 4502 0005 1332
+**Banco:** Banco de España
+**SWIFT/BIC:** CAIXESBBXXX
+
+## Contacto de Emergencia
+
+**Nombre:** María López García
+**Relación:** Esposa
+**Teléfono:** +34 654 321 987
+**Correo:** maria.lopez@email.es
+
+## Información Profesional
+
+**Puesto:** Ingeniero de Software Senior
+**Departamento:** Desarrollo de Productos
+**ID de Empleado:** EMP-2023-0042
+**Fecha de Inicio:** 1 de enero de 2020
+
+## Notas
+
+Este documento contiene información personal identificable (PII) de prueba para demostrar las capacidades de detección y redacción de PII en texto en español. Todos los datos son ficticios y se han creado únicamente para propósitos de prueba.

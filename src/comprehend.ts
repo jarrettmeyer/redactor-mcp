@@ -1,7 +1,9 @@
 import {
   ComprehendClient,
   DetectPiiEntitiesCommand,
+  DetectDominantLanguageCommand,
   type DetectPiiEntitiesCommandInput,
+  type DominantLanguage,
 } from "@aws-sdk/client-comprehend";
 import { CredentialsProviderError } from "@smithy/property-provider";
 import type { PiiEntity } from "./types.js";
@@ -101,19 +103,52 @@ function resetClient(): void {
 }
 
 /**
+ * Call AWS Comprehend DetectDominantLanguage and return the list of detected languages.
+ * Automatically retries once with a fresh client if credential errors are detected.
+ */
+export async function detectLanguage(text: string): Promise<DominantLanguage[]> {
+  const client = getClient();
+
+  try {
+    const command = new DetectDominantLanguageCommand({ Text: text });
+    const response = await client.send(command);
+    return response.Languages || [];
+  } catch (error) {
+    // If it's a credential error, reset the client and retry once
+    if (isCredentialError(error)) {
+      resetClient();
+
+      // Retry with fresh client
+      try {
+        const freshClient = getClient();
+        const command = new DetectDominantLanguageCommand({ Text: text });
+        const response = await freshClient.send(command);
+        return response.Languages || [];
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+
+    // Not a credential error or retry failed - propagate exception
+    throw error;
+  }
+}
+
+/**
  * Call AWS Comprehend DetectPiiEntities and return the list of entities.
  * Automatically retries once with a fresh client if credential errors are detected.
  */
 export async function detectPiiEntities(
   text: string,
-  languageCode: "en" | string = "en"
+  languageCode?: string
 ): Promise<PiiEntity[]> {
   const client = getClient();
+  const langCode = languageCode || "en";
 
   try {
     const command = new DetectPiiEntitiesCommand({
       Text: text,
-      LanguageCode: languageCode as "en",
+      LanguageCode: langCode as "en",
     });
     const response = await client.send(command);
     return response.Entities || [];
@@ -127,7 +162,7 @@ export async function detectPiiEntities(
         const freshClient = getClient();
         const command = new DetectPiiEntitiesCommand({
           Text: text,
-          LanguageCode: languageCode as "en",
+          LanguageCode: langCode as "en",
         });
         const response = await freshClient.send(command);
         return response.Entities || [];

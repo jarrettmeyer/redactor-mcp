@@ -1,0 +1,42 @@
+# Profil d'Employé - Marie Dupont
+
+## Informations Personnelles
+
+**Nom Complet:** Marie Dupont
+**Date de Naissance:** 22 avril 1990
+**Numéro de Sécurité Sociale:** 2 90 04 75 116 025 13
+**Téléphone:** +33 1 42 68 53 00
+**Adresse E-mail:** marie.dupont@entreprise.fr
+
+## Adresse
+
+15 Avenue des Champs-Élysées
+Appartement 7
+75008 Paris
+France
+
+## Informations Bancaires
+
+**Numéro de Compte:** FR14 2004 1010 0505 0001 3M02 606
+**Banque:** Banque de France
+**Code BIC:** BNPAFRPPXXX
+
+## Contact d'Urgence
+
+**Nom:** Pierre Dupont
+**Relation:** Époux
+**Téléphone:** +33 6 12 34 56 78
+**E-mail:** pierre.dupont@email.fr
+
+## Informations Professionnelles
+
+**Poste:** Chef de Projet
+**Département:** Innovation et Stratégie
+**Numéro d'Employé:** EMP-2021-0156
+**Date d'Embauche:** 15 septembre 2021
+
+## Remarques
+
+Ce document contient des informations personnelles identifiables (PII) de test pour démontrer la détection de langue et la gestion des langues non prises en charge pour la détection PII. Toutes les données sont fictives et ont été créées uniquement à des fins de test.
+
+**Note importante:** AWS Comprehend ne prend actuellement en charge la détection PII que pour l'anglais et l'espagnol. Ce fichier français déclenchera un message d'erreur informatif lors de l'utilisation des outils de détection ou de rédaction PII.
