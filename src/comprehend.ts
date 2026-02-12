@@ -1,12 +1,11 @@
 import {
   ComprehendClient,
-  DetectPiiEntitiesCommand,
   DetectDominantLanguageCommand,
-  type DetectPiiEntitiesCommandInput,
+  DetectPiiEntitiesCommand,
   type DominantLanguage,
+  type PiiEntity,
 } from "@aws-sdk/client-comprehend";
 import { CredentialsProviderError } from "@smithy/property-provider";
-import type { PiiEntity } from "./types.js";
 
 // Cached client singleton
 let _client: ComprehendClient | null = null;
@@ -70,27 +69,11 @@ function isCredentialError(error: unknown): boolean {
 
 /**
  * Get the cached Comprehend client or create a new one.
+ * SDK v3 resolves credentials lazily on first API call, so construction never throws.
  */
 function getClient(): ComprehendClient {
   if (_client === null) {
-    const region = getRegion();
-    try {
-      _client = new ComprehendClient({ region });
-    } catch (error) {
-      // Check if it's a credential error and provide helpful message
-      if (isCredentialError(error) || String(error).toLowerCase().includes("sso")) {
-        // Get the AWS profile for the error message
-        const profile = process.env.AWS_PROFILE;
-        const profileMsg = profile
-          ? `aws sso login --profile ${profile}`
-          : "aws sso login --profile <your-profile>";
-
-        throw new Error(
-          `AWS credentials are invalid or expired. If using SSO, run: ${profileMsg}`
-        );
-      }
-      throw error;
-    }
+    _client = new ComprehendClient({ region: getRegion() });
   }
   return _client;
 }
@@ -140,7 +123,7 @@ export async function detectLanguage(text: string): Promise<DominantLanguage[]> 
  */
 export async function detectPiiEntities(
   text: string,
-  languageCode?: string
+  languageCode: string = "en"
 ): Promise<PiiEntity[]> {
   const client = getClient();
   const langCode = languageCode || "en";
@@ -157,21 +140,16 @@ export async function detectPiiEntities(
     if (isCredentialError(error)) {
       resetClient();
 
-      // Retry with fresh client
-      try {
-        const freshClient = getClient();
-        const command = new DetectPiiEntitiesCommand({
-          Text: text,
-          LanguageCode: langCode as "en",
-        });
-        const response = await freshClient.send(command);
-        return response.Entities || [];
-      } catch (retryError) {
-        throw retryError;
-      }
+      const freshClient = getClient();
+      const command = new DetectPiiEntitiesCommand({
+        Text: text,
+        LanguageCode: languageCode as "en",
+      });
+      const response = await freshClient.send(command);
+      return response.Entities || [];
     }
 
-    // Not a credential error or retry failed - propagate exception
+    // Not a credential error - propagate exception
     throw error;
   }
 }

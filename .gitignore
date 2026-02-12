@@ -6,11 +6,6 @@
 .env.*
 !.env.example
 
-# Python
-__pycache__/
-*.egg-info/
-.ruff_cache/
-
 # bun/node
 dist/
 node_modules/
