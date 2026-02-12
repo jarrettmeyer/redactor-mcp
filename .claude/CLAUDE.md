@@ -8,7 +8,12 @@ MCP (Model Context Protocol) server that wraps AWS Comprehend for PII detection 
 
 ### Tools
 
-Three MCP tools:
+Four MCP tools:
+
+**`detect_language`** — Detects the dominant language(s) in text.
+
+- `text` (string, required) — The text content to analyze. Must be under 100KB.
+- Returns: List of detected languages with `language_code` (e.g., "en", "es"), `language_name` (e.g., "English", "Spanish"), and `score` (confidence from 0.0 to 1.0).
 
 **`detect_pii`** — Detects PII entities in the provided text.
 
@@ -205,15 +210,17 @@ bun run inspector
 
 1. Click **Connect**.
 2. Go to **Tools** tab, click **List Tools**.
-3. Three tools should appear: `detect_pii`, `redact_pii`, `summarize_pii`.
+3. Four tools should appear: `detect_language`, `detect_pii`, `redact_pii`, `summarize_pii`.
 4. Select a tool, fill in the `text` field, and click **Run Tool**.
 
-**Language Detection:**
+**Example with `detect_language`:**
 ```json
 {"text": "Bonjour, je m'appelle Marie."}
 ```
 Returns: `[{"language_code": "fr", "language_name": "French", "score": 0.9876}]`
 
+**Example with PII tools:**
+Input: `"My name is Jane Doe and my SSN is 123-45-6789."`
 - `detect_pii` → two entities: NAME ("Jane Doe") and SSN ("123-45-6789")
 - `redact_pii` → `My name is [NAME] and my SSN is [SSN].`
 - `summarize_pii` → `{"NAME": 1, "SSN": 1, "total": 2}`
