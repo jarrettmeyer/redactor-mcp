@@ -115,6 +115,11 @@ Uses Zod schemas to validate tool parameters at runtime:
 - Range validation (confidence between 0 and 1)
 - Ensures type safety beyond TypeScript's compile-time checks
 
+## SDK Version Notes
+
+- Use `McpServer` (from `@modelcontextprotocol/sdk/server/mcp.js`) — the high-level API with `registerTool` and `registerPrompt`. The low-level `Server` class (from `server/index.js`) is deprecated.
+- When editing MCP server code, check for deprecated SDK symbols and update to current equivalents.
+
 ## How to Run
 
 ```bash
