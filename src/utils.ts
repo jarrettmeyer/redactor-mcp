@@ -5,6 +5,9 @@ export const MAX_TEXT_BYTES = 100_000;
 /**
  * Check if text size exceeds AWS Comprehend's 100KB limit for synchronous API.
  * @throws {Error} If text exceeds size limit
+ *
+ * TODO: Support chunking large texts by splitting on sentence/paragraph boundaries,
+ * processing each chunk, and merging results with adjusted offsets.
  */
 export function checkTextSize(text: string): void {
   const encoder = new TextEncoder();

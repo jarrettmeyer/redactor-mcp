@@ -10,13 +10,14 @@ This is a **demo project**, not production software.
 
 ### Tools
 
-Two MCP tools:
+Three MCP tools:
 
 **`detect_pii`** — Detects PII entities in the provided text.
 
-- `text` (string, required) — The text content to analyze.
-- `pii_types` (list of strings, optional) — Specific PII entity types to detect (e.g., `["NAME", "EMAIL"]`). If omitted, detect all types.
-- `confidence_threshold` (float, optional, default `0.0`) — Minimum confidence score to include an entity. Default is aggressive (include everything).
+- `text` (string, required) — The text content to analyze. Must be under 100KB.
+- `pii_types` (list of strings, optional) — Specific PII entity types to detect (e.g., `["NAME", "EMAIL"]`). If omitted, detect all types. Must be valid Comprehend types (see list below).
+- `confidence_threshold` (float, optional, default `0.0`) — Minimum confidence score to include an entity.
+- `language` (string, optional, default `"en"`) — Language code for the text.
 - Returns: List of detected entities with type, text, score, and character offsets.
 
 **`redact_pii`** — Redacts PII entities in the provided text by replacing them with tags like `[NAME]`, `[SSN]`, `[ADDRESS]`, etc.
@@ -24,26 +25,37 @@ Two MCP tools:
 - `text` (string, required) — The text content to redact.
 - `pii_types` (list of strings, optional) — Specific PII entity types to redact. If omitted, redact all types.
 - `confidence_threshold` (float, optional, default `0.0`) — Minimum confidence score to redact an entity.
+- `language` (string, optional, default `"en"`) — Language code for the text.
 - Returns: The redacted text with PII replaced by entity type tags.
 
-Both tools accept text content directly. Claude Desktop handles file I/O — the tools don't read or write files.
+**`summarize_pii`** — Counts PII entities in the provided text by type.
 
-### Prompt
+- `text` (string, required) — The text content to analyze.
+- `pii_types` (list of strings, optional) — Specific PII entity types to count. If omitted, count all types.
+- `confidence_threshold` (float, optional, default `0.0`) — Minimum confidence score to include an entity.
+- `language` (string, optional, default `"en"`) — Language code for the text.
+- Returns: JSON object with counts per entity type and a `total` count, e.g. `{"NAME": 2, "SSN": 1, "total": 3}`.
 
-**`pii_redaction_guide`** — A guided prompt template that walks the user through:
+All tools accept text content directly. Claude Desktop handles file I/O — the tools don't read or write files.
 
-- What file to redact
-- All PII or specific types
-- Confidence threshold (with explanation)
+### Valid PII Entity Types
 
-The prompt is a UX convenience. The tools work fine without it via free-form conversation.
+Entity types are validated by Zod enum at runtime. Invalid types produce a clear error. Valid types:
+
+```
+ADDRESS, AWS_ACCESS_KEY, AWS_SECRET_KEY, BANK_ACCOUNT_NUMBER, BANK_ROUTING,
+CREDIT_DEBIT_CVV, CREDIT_DEBIT_EXPIRY, CREDIT_DEBIT_NUMBER, DATE_OF_BIRTH,
+DRIVER_ID, EMAIL, INTERNATIONAL_BANK_ACCOUNT_NUMBER, IP_ADDRESS, LICENSE_PLATE,
+MAC_ADDRESS, NAME, PASSPORT_NUMBER, PASSWORD, PHONE, PIN, SSN, SWIFT_CODE,
+URL, USERNAME, US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER
+```
 
 ### AWS Comprehend Integration
 
 - Uses the **synchronous** `DetectPiiEntities` API.
 - **100KB text limit** (Comprehend's sync API constraint). Async/batch operations are out of scope.
-- Language is hardcoded to `en`.
-- Entity type tags (e.g., `NAME`, `SSN`, `DATE_OF_BIRTH`, `PHONE`, `EMAIL`, `ADDRESS`, `BANK_ACCOUNT_NUMBER`) come directly from Comprehend — no custom mapping.
+- Language defaults to `en`. AWS Comprehend's PII detection only supports English for most entity types.
+- Entity type tags come directly from Comprehend — no custom mapping.
 - AWS authentication uses the standard credential chain (env vars, `~/.aws/credentials`, IAM role, etc.).
 
 ## Project Structure
@@ -60,10 +72,8 @@ redactor-mcp/
 ├── src/
 │   ├── index.ts               # MCP server entry point
 │   ├── comprehend.ts          # AWS Comprehend wrapper with retry logic
-│   ├── types.ts               # Type definitions and Zod schemas
-│   ├── utils.ts               # Helper functions
-│   └── prompts/
-│       └── pii_redaction_guide.md
+│   ├── types.ts               # Type definitions, Zod schemas, PII_ENTITY_TYPES enum
+│   └── utils.ts               # Helper functions
 ├── manifest.json              # MCPB packaging metadata
 ├── package.json
 ├── README.md
@@ -84,19 +94,18 @@ redactor-mcp/
 - **Text in, text out** — Tools receive and return text. Claude Desktop handles file reading/writing.
 - **Plain text files only** — `.txt`, `.md`, `.csv`. Other file types are a future problem.
 - **Demo scope** — No async operations, no multi-language support, no custom entity mappings.
+- **Entity type validation** — Zod enum rejects invalid PII types with a clear error message at call time.
 
 ## Implementation Details
 
 ### Module Structure
 
-- **src/index.ts** — MCP server using `@modelcontextprotocol/sdk`, registers tools and prompts, handles tool execution
-- **src/comprehend.ts** — AWS Comprehend client wrapper with sophisticated credential error detection and automatic retry logic
-- **src/types.ts** — Zod schemas for parameter validation, TypeScript type definitions, AWS SDK type re-exports
+- **src/index.ts** — MCP server using `@modelcontextprotocol/sdk`, registers tools, handles tool execution
+- **src/comprehend.ts** — AWS Comprehend client wrapper with credential error detection and automatic retry logic
+- **src/types.ts** — Zod schemas (with `.describe()` on all fields), `PII_ENTITY_TYPES` const array, TypeScript type definitions
 - **src/utils.ts** — Text size validation (100KB limit enforcement) and entity filtering by type/confidence
 
 ### Credential Retry Logic
-
-The TypeScript implementation maintains the sophisticated credential error handling from the Python version:
 
 - Detects credential errors via multiple strategies:
   - `CredentialsProviderError` instance check (AWS SDK v3 Smithy provider)
@@ -106,19 +115,22 @@ The TypeScript implementation maintains the sophisticated credential error handl
 - Automatically resets the cached ComprehendClient on credential errors
 - Retries once with a fresh client to handle expired SSO tokens
 - Provides helpful SSO login instructions with profile name on persistent failures
+- Note: `ComprehendClient` construction never throws — SDK v3 resolves credentials lazily on first API call
 
 ### Tool Parameter Validation
 
 Uses Zod schemas to validate tool parameters at runtime:
-- Type-safe parameter parsing with automatic coercion
-- Default values (confidence_threshold: 0.0)
-- Range validation (confidence between 0 and 1)
-- Ensures type safety beyond TypeScript's compile-time checks
+- All three tools share the same base schema (text, pii_types, confidence_threshold, language)
+- `pii_types` validated against `PII_ENTITY_TYPES` enum — invalid types are rejected immediately
+- `.describe()` on all fields gives LLM-readable parameter hints
+- Default values: `confidence_threshold: 0.0`, `language: "en"`
 
 ## SDK Version Notes
 
-- Use `McpServer` (from `@modelcontextprotocol/sdk/server/mcp.js`) — the high-level API with `registerTool` and `registerPrompt`. The low-level `Server` class (from `server/index.js`) is deprecated.
+- Use `McpServer` (from `@modelcontextprotocol/sdk/server/mcp.js`) — the high-level API with `registerTool`. The low-level `Server` class (from `server/index.js`) is deprecated.
 - When editing MCP server code, check for deprecated SDK symbols and update to current equivalents.
+- **`LanguageCode` cast is intentional**: `DetectPiiEntitiesCommandInput.LanguageCode` is typed as `"en"` in the SDK, so `as "en"` in `comprehend.ts` is required — do not remove it.
+- **Zod v4**: The project uses `zod ^4.3.6` (v4, not v3). Check v4 docs when looking up API details.
 
 ## How to Run
 
@@ -133,12 +145,6 @@ bun run dev
 bun run build
 ```
 
-## Type Checking
-
-```bash
-bun run typecheck
-```
-
 ## How to Test
 
 ### Type checking
@@ -146,6 +152,14 @@ bun run typecheck
 ```bash
 bun run typecheck
 ```
+
+### Manifest validation
+
+```bash
+bun run validate
+```
+
+Validates the `manifest.json` schema using `@anthropic-ai/mcpb`.
 
 ### MCP Inspector
 
@@ -157,12 +171,14 @@ bun run inspector
 
 1. Click **Connect**.
 2. Go to **Tools** tab, click **List Tools**.
-3. Select `detect_pii` or `redact_pii`, fill in the `text` field, and click **Run Tool**.
+3. Three tools should appear: `detect_pii`, `redact_pii`, `summarize_pii`.
+4. Select a tool, fill in the `text` field, and click **Run Tool**.
 
 Test input: `My name is Jane Doe and my SSN is 123-45-6789.`
 
-- `detect_pii` should return two entities: NAME ("Jane Doe") and SSN ("123-45-6789").
-- `redact_pii` should return: `My name is [NAME] and my SSN is [SSN].`
+- `detect_pii` → two entities: NAME ("Jane Doe") and SSN ("123-45-6789")
+- `redact_pii` → `My name is [NAME] and my SSN is [SSN].`
+- `summarize_pii` → `{"NAME": 1, "SSN": 1, "total": 2}`
 
 ### Claude Desktop
 
@@ -173,3 +189,4 @@ Use the sample files in `docs/samples/` to test both tools. Upload them in Claud
 - "Find all the email addresses in this file"
 - "Redact only names and phone numbers"
 - "Redact PII but only high-confidence matches"
+- "How much PII is in this file?"
