@@ -4,13 +4,29 @@
     "allow": [
       "Bash(bun:*)",
       "Bash(bunx:*)",
+      "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(lsof:*)",
       "WebSearch",
       "mcp__playwright__browser_click",
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_type"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$TOOL_NAME\" == \"Edit\" || \"$TOOL_NAME\" == \"Write\" ]]; then if [[ \"$FILE_PATH\" == *.ts ]]; then echo '🔍 Running type check...'; bun run typecheck; fi; fi"
+          }
+        ]
+      }
     ]
   }
 }
