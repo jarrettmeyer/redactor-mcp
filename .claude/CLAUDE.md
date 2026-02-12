@@ -4,8 +4,6 @@
 
 MCP (Model Context Protocol) server that wraps AWS Comprehend for PII detection and redaction. Users work in Claude Desktop: they upload a plain text file, give a prompt like "Remove the PII from this file," and get back a redacted version.
 
-This is a **demo project**, not production software.
-
 ## Architecture
 
 ### Tools
@@ -100,6 +98,37 @@ redactor-mcp/
 - **Plain text files only** — `.txt`, `.md`, `.csv`. Other file types are a future problem.
 - **Demo scope** — No async operations, no multi-language support, no custom entity mappings.
 - **Entity type validation** — Zod enum rejects invalid PII types with a clear error message at call time.
+
+## Documentation Guidelines
+
+### When to Update CHANGELOG.md
+
+Document changes in CHANGELOG.md when they meet any of these criteria:
+
+**Always document:**
+- New features or tools
+- Breaking changes to APIs or behavior
+- Security fixes
+- Bug fixes that affect user-visible behavior
+- Changes to dependencies that impact functionality
+- New configuration options or requirements
+
+**Usually document:**
+- Performance improvements (if measurable/significant)
+- Error message improvements
+- Changes to validation logic
+- New language support or expanded entity types
+
+**No need to document:**
+- Internal refactoring with no external impact
+- Code style changes, formatting
+- Documentation updates (README, CLAUDE.md)
+- Test additions or changes
+- Build script tweaks
+- Minor typo fixes in comments
+- Dependency updates with no functional change
+
+**Rule of thumb:** If a user would notice the change or need to know about it when upgrading, document it in CHANGELOG.md.
 
 ## Implementation Details
 
