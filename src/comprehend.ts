@@ -2,9 +2,9 @@ import {
   ComprehendClient,
   DetectPiiEntitiesCommand,
   type DetectPiiEntitiesCommandInput,
+  type PiiEntity,
 } from "@aws-sdk/client-comprehend";
 import { CredentialsProviderError } from "@smithy/property-provider";
-import type { PiiEntity } from "./types.js";
 
 // Cached client singleton
 let _client: ComprehendClient | null = null;

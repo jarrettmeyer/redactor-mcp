@@ -1,4 +1,3 @@
-import type { PiiEntity, PiiEntityType } from "@aws-sdk/client-comprehend";
 import { z } from "zod";
 
 // Zod schemas for MCP tool parameter validation
@@ -27,5 +26,3 @@ export interface DetectedPiiEntity {
   end_offset: number;
 }
 
-// Re-export AWS SDK types for convenience
-export type { PiiEntity, PiiEntityType };

@@ -1,4 +1,4 @@
-import type { PiiEntity } from "./types.js";
+import type { PiiEntity } from "@aws-sdk/client-comprehend";
 
 export const MAX_TEXT_BYTES = 100_000;
 
