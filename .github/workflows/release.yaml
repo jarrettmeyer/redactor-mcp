@@ -34,8 +34,19 @@ jobs:
       - name: Package MCPB bundle
         run: bun run pack
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          # Extract the section for this version from CHANGELOG.md
+          sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release-notes.md
+          # If extraction failed or file is empty, use a default message
+          if [ ! -s release-notes.md ]; then
+            echo "Release v${VERSION}" > release-notes.md
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: redactor-mcp.mcpb
-          generate_release_notes: true
+          body_path: release-notes.md

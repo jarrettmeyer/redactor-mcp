@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Release workflow now extracts and uses changelog content for GitHub release notes instead of auto-generated notes
+
 ## [0.1.0] - 2026-02-12
 
 ### Added
